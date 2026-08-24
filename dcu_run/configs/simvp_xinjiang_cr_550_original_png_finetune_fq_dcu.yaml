@@ -1,0 +1,94 @@
+# SimVP + 新疆 CR 6min PNG（曙光 DCU 示例）
+# train/val/test：多列 CSV；radar_dir 为 PNG 根目录。
+#
+# 用法（在 transfer/dcu_run 下）：
+#   python run_train_yaml.py --config configs/simvp_xinjiang_cr_550_original_png_dcu.yaml
+# 请将 radar_dir、CSV 路径改为 DCU 节点上的实际路径；accelerator 必须为 gpu（勿用 npu）。
+
+launcher: python
+
+accelerator: gpu
+# 方法二：指定物理卡 2–7（共 6 块），勿写 devices，否则会覆盖 gpus。
+gpus: "2,3,4,5,6,7"
+
+model_name: simvp
+dataset_name: SingleRadarDataModule
+
+height: 560
+width: 560
+input_length: 20
+target_length: 20
+downscale_factor: 16
+
+train_file: ./preprocess/xinjiang_cr_6min/data_list_train.csv
+val_file: ./preprocess/xinjiang_cr_6min/data_list_val.csv
+test_file: ./preprocess/xinjiang_cr_6min/data_list_test.csv
+
+# 在 DCU 节点上修改为实际数据根目录
+radar_dir: ./data/xinjiang/CR_6min_550x550
+
+packed_sequence_file: 0
+packed_event_npy: 0
+
+val_sample_interval: 1
+
+input_class:
+  - 1
+predict_class:
+  - 1
+predict_class_vmax:
+  - 70
+
+loss_fx: l1
+learning_rate: 0.00005
+
+hid_S: 32
+hid_T: 128
+N_S: 4
+N_T: 3
+groups: 8
+incep_ker:
+  - 3
+  - 5
+  - 7
+  - 11
+
+batch_size: 4
+num_workers: 4
+pin_memory: 1
+
+add_video: 0
+early_stopping_on: 0
+
+train_log_steps: 500
+val_log_steps: 20
+
+tensorboard_save_path: log
+tensorboard_exp_name: simvp_xinjiang_cr550_png_dcu
+
+save_dirpath: save/simvp_xinjiang_cr550_png_dcu
+save_monitor: CSI_35dBZ_val
+save_filename: "weights-{epoch:03d}-{CSI_35dBZ_val:.3f}"
+save_top_k: 10
+save_mode: max
+
+max_epochs: 50
+check_val_rate: 1.0
+refresh_rate: 20
+
+weight_path: null
+resume_path: "./save/weights-epoch=008-CSI_35dBZ_val=0.045.ckpt"
+resume_weights_only: true
+
+# 1 或 true：冻结对应子模块（仅训练未冻部分）；通常配合 weight_path 只开 freeze_encoder
+freeze_encoder: 0
+freeze_mid: 0
+freeze_decoder: 0
+
+# 频域辅助损失：0 表示关闭（与旧行为一致）
+freq_loss_weight: 0.1
+freq_loss_alpha: 1.0
+freq_loss_scales:
+  - 1
+  - 2
+  - 4

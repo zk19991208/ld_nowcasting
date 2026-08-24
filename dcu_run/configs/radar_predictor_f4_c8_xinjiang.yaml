@@ -1,0 +1,85 @@
+# 阶段 2 P1：冻结 f=4, C=8 AE，直接预测未来 20 个 latent。
+# 运行前先按 experiment/03_predictor_plan.md 生成训练集 latent 统计文件。
+
+launcher: python
+accelerator: gpu
+gpus: "0"
+precision: 16-mixed
+gradient_clip_val: 1.0
+accumulate_grad_batches: 1
+
+model_name: radar_latent_predictor
+dataset_name: SingleRadarDataModule
+
+height: 560
+width: 560
+input_length: 20
+target_length: 20
+
+train_file: ./preprocess/xinjiang_cr_6min/data_list_train.csv
+val_file: ./preprocess/xinjiang_cr_6min/data_list_val.csv
+test_file: ./preprocess/xinjiang_cr_6min/data_list_test.csv
+radar_dir: ./data/xinjiang/CR_6min_550x550
+packed_sequence_file: 0
+packed_event_npy: 0
+val_sample_interval: 1
+
+predictor_ae_checkpoint: ./save/radar_ae_f4_c8_xinjiang/weights-epoch=013-valid_loss_fx=0.00298.ckpt
+predictor_latent_stats_path: ./artifacts/radar_ae_f4_c8_xinjiang_latent_stats.npz
+
+predictor_hid_s: 32
+predictor_hid_t: 256
+predictor_n_s: 4
+predictor_n_t: 4
+predictor_incep_ker: [3, 5, 7, 11]
+predictor_groups: 8
+predictor_residual: none
+
+predictor_encode_chunk_size: 4
+predictor_decode_chunk_size: 4
+predictor_huber_beta: 1.0
+
+# P1 只训练 latent Huber。P2 从 P1 checkpoint 继续，并改为 0.1。
+predictor_lambda_field: 0.0
+predictor_field_frames_per_sample: 2
+ae_radar_vmax: 70
+ae_loss_thresholds_dbz: [20, 35, 45]
+ae_loss_weights: [1, 2, 4, 8]
+ae_mse_weight: 0.2
+ae_gradient_weight: 0.1
+
+predictor_metric_thresholds_dbz: [25, 35, 45]
+predictor_metric_leads: [1, 5, 10, 15, 20]
+predictor_metric_height: 550
+predictor_metric_width: 550
+predictor_log_images: 1
+predictor_num_log_images: 4
+
+learning_rate: 0.0002
+predictor_weight_decay: 0.0001
+predictor_lr_patience: 5
+predictor_lr_factor: 0.5
+
+batch_size: 1
+num_workers: 4
+pin_memory: 1
+max_epochs: 100
+check_val_rate: 1.0
+refresh_rate: 20
+
+tensorboard_save_path: log
+tensorboard_exp_name: radar_predictor_f4_c8_xinjiang_p1
+save_dirpath: save/radar_predictor_f4_c8_xinjiang_p1
+save_monitor: valid_loss_fx
+save_filename: "weights-{epoch:03d}-{valid_loss_fx:.5f}"
+save_top_k: 5
+save_mode: min
+
+early_stopping_on: 1
+early_stopping_monitor: valid_loss_fx
+early_stopping_patience: 15
+early_stopping_mode: min
+
+weight_path: null
+resume_path: ""
+resume_weights_only: false

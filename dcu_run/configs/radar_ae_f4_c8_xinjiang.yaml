@@ -1,0 +1,68 @@
+# 雷达逐帧 ResNet AutoEncoder 保真度对照：f=4, C=8。
+# 其余参数应与 f=8 实验保持一致。
+
+launcher: python
+accelerator: gpu
+gpus: "0"
+
+model_name: radar_autoencoder
+dataset_name: SingleRadarDataModule
+
+height: 560
+width: 560
+input_length: 20
+target_length: 20
+
+train_file: ./preprocess/xinjiang_cr_6min/data_list_train.csv
+val_file: ./preprocess/xinjiang_cr_6min/data_list_val.csv
+test_file: ./preprocess/xinjiang_cr_6min/data_list_test.csv
+radar_dir: ./data/xinjiang/CR_6min_550x550
+packed_sequence_file: 0
+packed_event_npy: 0
+val_sample_interval: 1
+
+ae_base_channels: 32
+ae_channel_multipliers: [1, 2, 4]
+ae_layers_per_block: 2
+ae_latent_channels: 8
+ae_norm_groups: 32
+ae_output_activation: none
+ae_frame_source: all
+ae_frames_per_sample: 1
+
+ae_radar_vmax: 70
+ae_loss_thresholds_dbz: [20, 35, 45]
+ae_loss_weights: [1, 2, 4, 8]
+ae_mse_weight: 0.2
+ae_gradient_weight: 0.1
+ae_metric_thresholds_dbz: [25, 35, 45]
+ae_log_images: 1
+ae_num_log_images: 4
+
+learning_rate: 0.0001
+ae_lr_patience: 5
+ae_lr_factor: 0.5
+
+batch_size: 2
+num_workers: 4
+pin_memory: 1
+max_epochs: 100
+check_val_rate: 1.0
+refresh_rate: 20
+
+tensorboard_save_path: log
+tensorboard_exp_name: radar_ae_f4_c8_xinjiang
+save_dirpath: save/radar_ae_f4_c8_xinjiang
+save_monitor: valid_loss_fx
+save_filename: "weights-{epoch:03d}-{valid_loss_fx:.5f}"
+save_top_k: 5
+save_mode: min
+
+early_stopping_on: 1
+early_stopping_monitor: valid_loss_fx
+early_stopping_patience: 15
+early_stopping_mode: min
+
+weight_path: null
+resume_path: ""
+resume_weights_only: false

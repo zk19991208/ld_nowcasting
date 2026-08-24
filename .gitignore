@@ -1,0 +1,32 @@
+# Runtime datasets and generated artifacts
+/data/
+/save/
+/log/
+/artifacts/
+
+# Model weights
+*.ckpt
+*.pth
+*.pt
+
+# Generated sequence lists (large and machine-specific)
+/preprocess/**/data_list*.csv
+
+# Inference outputs
+/inference/radar_ae_f4_manual/
+/inference/radar_ae_examples/
+/inference/radar_predictor*/
+/inference/**/*_out/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Editors and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

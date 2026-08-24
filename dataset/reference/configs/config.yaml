@@ -1,0 +1,63 @@
+data:
+  data_root: /liyang/data/NJU_CPOL
+  index_dir: ./index
+  variables: [dBZ]            # extensible: [dBZ, ZDR, KDP]
+  n_input_frames: 10          # past 1 hour  (10 x 6min)
+  n_output_frames: 20         # future 2 hours (20 x 6min)
+  batch_size: 32
+  num_workers: 4
+
+model:
+  base_channels: 64
+  mefm:                            # Multi-scale Extraction & Fusion Module (Yang & Yuan 2023)
+    enabled: false                 # set true to enable MEFM between encoder & decoder
+    num_heads: 4
+    pool_ratios: [1, 2, 4, 8]     # pyramid pooling ratios for K/V in attention
+
+train:
+  max_epochs: 500
+  lr: 0.001
+  weight_decay: 0.00001
+  early_stopping_patience: 10     # stop if val_loss doesn't improve for N epochs
+  scheduler:
+    patience: 3                    # epochs with no val_loss improvement
+    factor: 0.1                    # new_lr = lr * factor
+    min_lr: 0.000001
+
+# Loss function — composite, pick any combination from the registry:
+#   Point-wise: mse, l1, weighted_mse, weighted_l1, balanced_mse, balanced_mae, dice, ssim
+#   Probability-matching: pm (MSE-based), pm_l1 (L1-based)
+#   Multi-scale spatial: spatial_ms_ssim  (DWT + SSIM, Yang & Yuan 2023)
+#   Temporal: temporal  (frame-difference consistency, Yang & Yuan 2023)
+#
+# Example A — Cao et al. 2025:  L = MSE + 10*PM
+#   components: {mse: {weight: 1.0}, pm: {weight: 10.0}}
+#
+# Example B — Yang & Yuan 2023 CM loss (fixed):
+#   components:
+#     balanced_mse: {weight: 1.0}
+#     balanced_mae: {weight: 1.0}
+#     spatial_ms_ssim: {weight: 1.0, n_levels: 3}
+#     temporal: {weight: 1.0, n_output_frames: 20, n_vars: 1}
+loss:
+  components:
+    mse: {weight: 1.0}
+    pm:  {weight: 10.0}
+
+eval:
+  thresholds_dbz: [20, 35, 40]   # dBZ thresholds for CSI/POD/FAR
+  per_leadtime: false              # set true for per-lead-time metrics
+
+vis:
+  enabled: true
+  display_lead_minutes: [6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120]
+  every_n_epochs: 1
+  val_every_n_steps: 5             # 0 = only first batch per val epoch; >0 = every N val steps
+  train_every_n_steps: 100         # 0 = disabled; >0 = every N training steps
+  save_dir: ./vis_output           # set null to disable PNG saving
+
+logging:
+  use_tensorboard: true
+  use_wandb: false                 # set true to enable W&B logging
+  wandb_project: radar_nowcast
+  wandb_entity: null               # your W&B team/user, null = default

@@ -1,0 +1,44 @@
+================================================================================
+inference 相关已知问题与处理（transfer 仓库）
+================================================================================
+
+--------------------------------------------------------------------------------
+1) PyTorch Lightning 2.x：load_from_checkpoint 调用方式
+--------------------------------------------------------------------------------
+【现象】
+  TypeError: ... load_from_checkpoint cannot be called on an instance ...
+
+【原因】
+  不能写 Model(**args).load_from_checkpoint(...)，须写 Model.load_from_checkpoint(...)。
+
+【处理】
+  train.py（--weight_path）、inference/infer_simvp_mmnist.py 已改为类方法加载。
+
+--------------------------------------------------------------------------------
+2) infer_simvp_radar：state_dict size mismatch（与 ckpt 通道/宽度不一致）
+--------------------------------------------------------------------------------
+【现象】
+  RuntimeError: Error(s) in loading state_dict for SimVP_Lit:
+  例如 enc 首层 ckpt 为 [32,1,3,3]，当前模型却为 [64,2,3,3]。
+
+【原因】
+  推理时把 SimVP_Lit.add_model_specific_args 的「命令行默认值」一并传入
+  load_from_checkpoint(**kwargs)，会覆盖 checkpoint 里保存的 hyperparameters，
+  从而用错 input_class（双通道 0+1）和 hid_S 等，与华东单通道雷达训练 ckpt 不一致。
+
+【处理】（代码已改）
+  inference/infer_simvp_radar.py 加载权重时只传：
+    strict=False, map_location="cpu", batch_size=..., test_save_path=...
+  其余架构参数以 ckpt 为准。
+
+【运行注意】
+  仍需保证数据侧与训练一致：--val_file、--radar_dir、packed_event_npy 等与
+  ascend_run/configs 中对应 yaml（如 simvp_huadong_cr_550_original_png.yaml）一致。
+
+--------------------------------------------------------------------------------
+3) 昇腾 NPU
+--------------------------------------------------------------------------------
+  infer_simvp_radar：--accelerator npu，环境需 torch_npu + CANN set_env.sh。
+  详见 ascend_run/README_ASCEND.md。
+
+================================================================================

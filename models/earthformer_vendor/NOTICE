@@ -1,0 +1,10 @@
+Earthformer Cuboid Transformer (vendored subset)
+================================================
+Source: https://github.com/amazon-science/earth-forecasting-transformer
+License: Apache-2.0 (see earth-forecasting-transformer-main/LICENSE in your tree)
+
+Included files only:
+  earthformer/cuboid_transformer/cuboid_transformer.py
+  earthformer/cuboid_transformer/cuboid_transformer_patterns.py
+  earthformer/cuboid_transformer/utils.py
+  earthformer/utils/registry.py
